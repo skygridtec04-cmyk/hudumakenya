@@ -1,0 +1,67 @@
+<svg viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg">
+  <!-- Shield background -->
+  <defs>
+    <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a1a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Shield shape -->
+  <path d="M 70 30 L 130 30 L 140 45 L 140 120 Q 100 160 100 160 Q 60 160 60 120 L 60 45 Z" fill="url(#shieldGradient)" stroke="#333" stroke-width="2"/>
+  
+  <!-- Kenya flag colors on shield -->
+  <rect x="65" y="45" width="70" height="20" fill="#000000"/>
+  <rect x="65" y="65" width="70" height="20" fill="#DC143C"/>
+  <rect x="65" y="85" width="70" height="20" fill="#228B22"/>
+  
+  <!-- White rooster on red stripe -->
+  <g transform="translate(100, 75)">
+    <ellipse cx="0" cy="2" rx="6" ry="8" fill="#FFFFFF"/>
+    <circle cx="0" cy="-6" r="4" fill="#FFFFFF"/>
+    <path d="M -2 -10 L -1 -14 L 1 -13 L 2 -14 L 1 -10 Z" fill="#DC143C"/>
+    <polygon points="3,-5 6,-4 3,-2" fill="#FFD700"/>
+  </g>
+  
+  <!-- Left Lion with spear -->
+  <g transform="translate(40, 190)">
+    <!-- Body -->
+    <ellipse cx="0" cy="0" rx="10" ry="12" fill="#B8860B"/>
+    <!-- Head -->
+    <circle cx="0" cy="-10" r="8" fill="#B8860B"/>
+    <!-- Mane -->
+    <circle cx="0" cy="-10" r="11" fill="none" stroke="#8B4513" stroke-width="2.5" opacity="0.8"/>
+    <!-- Eye -->
+    <circle cx="-2" cy="-12" r="1.5" fill="#000"/>
+    <!-- Snout -->
+    <circle cx="0" cy="-6" r="3" fill="#DAA520"/>
+    <!-- Left spear -->
+    <g transform="translate(-6, -15)">
+      <line x1="0" y1="0" x2="-8" y2="-25" stroke="#C41E3A" stroke-width="2.5"/>
+      <polygon points="-8,-25 -6,-31 -10,-31" fill="#C41E3A"/>
+    </g>
+  </g>
+  
+  <!-- Right Lion with spear -->
+  <g transform="translate(160, 190)">
+    <!-- Body -->
+    <ellipse cx="0" cy="0" rx="10" ry="12" fill="#B8860B"/>
+    <!-- Head -->
+    <circle cx="0" cy="-10" r="8" fill="#B8860B"/>
+    <!-- Mane -->
+    <circle cx="0" cy="-10" r="11" fill="none" stroke="#8B4513" stroke-width="2.5" opacity="0.8"/>
+    <!-- Eye -->
+    <circle cx="2" cy="-12" r="1.5" fill="#000"/>
+    <!-- Snout -->
+    <circle cx="0" cy="-6" r="3" fill="#DAA520"/>
+    <!-- Right spear -->
+    <g transform="translate(6, -15)">
+      <line x1="0" y1="0" x2="8" y2="-25" stroke="#C41E3A" stroke-width="2.5"/>
+      <polygon points="8,-25 6,-31 10,-31" fill="#C41E3A"/>
+    </g>
+  </g>
+  
+  <!-- Banner -->
+  <rect x="55" y="215" width="90" height="30" rx="3" fill="#704214" stroke="#5a3210" stroke-width="1"/>
+  <text x="100" y="238" font-size="16" font-weight="bold" fill="#FFFFFF" text-anchor="middle" font-family="Arial, sans-serif" letter-spacing="2">HARAMBEE</text>
+</svg>
