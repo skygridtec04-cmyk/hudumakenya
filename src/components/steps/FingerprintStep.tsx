@@ -1,18 +1,18 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Fingerprint, Check, Loader2 } from "lucide-react";
+import { Fingerprint, Check } from "lucide-react";
 
 const FINGERS = [
-  { id: "right_thumb", label: "Right Thumb", hand: "right" },
-  { id: "right_index", label: "Right Index", hand: "right" },
-  { id: "right_middle", label: "Right Middle", hand: "right" },
-  { id: "right_ring", label: "Right Ring", hand: "right" },
-  { id: "right_pinky", label: "Right Pinky", hand: "right" },
-  { id: "left_thumb", label: "Left Thumb", hand: "left" },
-  { id: "left_index", label: "Left Index", hand: "left" },
-  { id: "left_middle", label: "Left Middle", hand: "left" },
-  { id: "left_ring", label: "Left Ring", hand: "left" },
-  { id: "left_pinky", label: "Left Pinky", hand: "left" },
+  { id: "right_thumb", label: "Right Thumb", position: "thumb-right" },
+  { id: "right_index", label: "Right Index", position: "index-right" },
+  { id: "right_middle", label: "Right Middle", position: "middle-right" },
+  { id: "right_ring", label: "Right Ring", position: "ring-right" },
+  { id: "right_pinky", label: "Right Pinky", position: "pinky-right" },
+  { id: "left_thumb", label: "Left Thumb", position: "thumb-left" },
+  { id: "left_index", label: "Left Index", position: "index-left" },
+  { id: "left_middle", label: "Left Middle", position: "middle-left" },
+  { id: "left_ring", label: "Left Ring", position: "ring-left" },
+  { id: "left_pinky", label: "Left Pinky", position: "pinky-left" },
 ];
 
 interface FingerprintStepProps {
@@ -21,100 +21,224 @@ interface FingerprintStepProps {
 }
 
 const FingerprintStep = ({ scannedFingers, onScan }: FingerprintStepProps) => {
-  const [scanning, setScanning] = useState<string | null>(null);
+  const [currentFinger, setCurrentFinger] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [showTick, setShowTick] = useState<string | null>(null);
 
-  const scanFinger = async (fingerId: string) => {
-    setScanning(fingerId);
+  const nextUnscannedFinger = FINGERS.find((f) => !scannedFingers.includes(f.id));
+
+  const handleScannerClick = async () => {
+    if (!nextUnscannedFinger || isScanning) return;
+
+    setIsScanning(true);
     
-    // Try WebAuthn / device biometrics
-    try {
-      if (window.PublicKeyCredential) {
-        const credential = await navigator.credentials.create({
-          publicKey: {
-            challenge: new Uint8Array(32),
-            rp: { name: "Huduma Kenya ID" },
-            user: {
-              id: new Uint8Array(16),
-              name: "applicant",
-              displayName: "ID Applicant",
-            },
-            pubKeyCredParams: [{ type: "public-key", alg: -7 }],
-            authenticatorSelection: {
-              authenticatorAttachment: "platform",
-              userVerification: "required",
-            },
-            timeout: 60000,
-          },
-        });
-        if (credential) {
-          const updated = [...scannedFingers, fingerId];
-          onScan(updated);
-        }
-      } else {
-        // Fallback: simulate scan
-        await new Promise((r) => setTimeout(r, 2000));
-        const updated = [...scannedFingers, fingerId];
-        onScan(updated);
-      }
-    } catch {
-      // If user cancels biometric, simulate success for demo
-      await new Promise((r) => setTimeout(r, 1500));
-      const updated = [...scannedFingers, fingerId];
-      onScan(updated);
-    }
+    // Simulate fingerprint scanner reading
+    await new Promise((r) => setTimeout(r, 1500));
     
-    setScanning(null);
+    const updated = [...scannedFingers, nextUnscannedFinger.id];
+    onScan(updated);
+    
+    // Show tick confirmation
+    setShowTick(nextUnscannedFinger.id);
+    setTimeout(() => setShowTick(null), 1000);
+    
+    setIsScanning(false);
+    
+    // Auto-set next finger
+    const nextFinger = FINGERS.find((f) => !updated.includes(f.id));
+    setCurrentFinger(nextFinger?.id || null);
   };
 
-  const rightFingers = FINGERS.filter((f) => f.hand === "right");
-  const leftFingers = FINGERS.filter((f) => f.hand === "left");
+  const renderHandDiagram = () => {
+    return (
+      <svg viewBox="0 0 200 300" className="w-full max-w-xs mx-auto">
+        {/* Palm */}
+        <ellipse cx="100" cy="180" rx="50" ry="70" fill="#f0f0f0" stroke="#999" strokeWidth="2" />
+        
+        {/* Thumb Right */}
+        <g>
+          <circle cx="70" cy="140" r="15" 
+            fill={scannedFingers.includes("right_thumb") ? "#4ade80" : nextUnscannedFinger?.id === "right_thumb" ? "#fbbf24" : "#e5e5e5"}
+            stroke={nextUnscannedFinger?.id === "right_thumb" ? "#f59e0b" : "#999"}
+            strokeWidth="2"
+          />
+          {scannedFingers.includes("right_thumb") && (
+            <text x="70" y="147" textAnchor="middle" className="text-sm font-bold fill-white">✓</text>
+          )}
+          <text x="70" y="165" textAnchor="middle" className="text-xs fill-gray-600">R Thumb</text>
+        </g>
 
-  const renderHand = (fingers: typeof FINGERS, title: string) => (
-    <div className="space-y-3">
-      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-      <div className="grid grid-cols-5 gap-2">
-        {fingers.map((finger) => {
-          const done = scannedFingers.includes(finger.id);
-          const isScanning = scanning === finger.id;
-          return (
-            <button
-              key={finger.id}
-              onClick={() => !done && !isScanning && scanFinger(finger.id)}
-              disabled={done || isScanning}
-              className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-[10px] transition-all ${
-                done
-                  ? "border-primary bg-primary/10 text-primary"
-                  : isScanning
-                  ? "border-accent bg-accent/10 text-accent animate-pulse"
-                  : "border-border bg-card text-muted-foreground hover:border-primary hover:bg-primary/5"
-              }`}
-            >
-              {done ? (
-                <Check className="h-5 w-5" />
-              ) : isScanning ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Fingerprint className="h-5 w-5" />
-              )}
-              <span className="leading-tight">{finger.label.split(" ")[1]}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
+        {/* Index Right */}
+        <g>
+          <circle cx="55" cy="90" r="12" 
+            fill={scannedFingers.includes("right_index") ? "#4ade80" : nextUnscannedFinger?.id === "right_index" ? "#fbbf24" : "#e5e5e5"}
+            stroke={nextUnscannedFinger?.id === "right_index" ? "#f59e0b" : "#999"}
+            strokeWidth="2"
+          />
+          {scannedFingers.includes("right_index") && (
+            <text x="55" y="97" textAnchor="middle" className="text-xs font-bold fill-white">✓</text>
+          )}
+        </g>
+
+        {/* Middle Right */}
+        <g>
+          <circle cx="70" cy="50" r="12" 
+            fill={scannedFingers.includes("right_middle") ? "#4ade80" : nextUnscannedFinger?.id === "right_middle" ? "#fbbf24" : "#e5e5e5"}
+            stroke={nextUnscannedFinger?.id === "right_middle" ? "#f59e0b" : "#999"}
+            strokeWidth="2"
+          />
+          {scannedFingers.includes("right_middle") && (
+            <text x="70" y="56" textAnchor="middle" className="text-xs font-bold fill-white">✓</text>
+          )}
+        </g>
+
+        {/* Ring Right */}
+        <g>
+          <circle cx="90" cy="40" r="12" 
+            fill={scannedFingers.includes("right_ring") ? "#4ade80" : nextUnscannedFinger?.id === "right_ring" ? "#fbbf24" : "#e5e5e5"}
+            stroke={nextUnscannedFinger?.id === "right_ring" ? "#f59e0b" : "#999"}
+            strokeWidth="2"
+          />
+          {scannedFingers.includes("right_ring") && (
+            <text x="90" y="46" textAnchor="middle" className="text-xs font-bold fill-white">✓</text>
+          )}
+        </g>
+
+        {/* Pinky Right */}
+        <g>
+          <circle cx="110" cy="50" r="12" 
+            fill={scannedFingers.includes("right_pinky") ? "#4ade80" : nextUnscannedFinger?.id === "right_pinky" ? "#fbbf24" : "#e5e5e5"}
+            stroke={nextUnscannedFinger?.id === "right_pinky" ? "#f59e0b" : "#999"}
+            strokeWidth="2"
+          />
+          {scannedFingers.includes("right_pinky") && (
+            <text x="110" y="56" textAnchor="middle" className="text-xs font-bold fill-white">✓</text>
+          )}
+        </g>
+
+        {/* Thumb Left */}
+        <g>
+          <circle cx="130" cy="140" r="15" 
+            fill={scannedFingers.includes("left_thumb") ? "#4ade80" : nextUnscannedFinger?.id === "left_thumb" ? "#fbbf24" : "#e5e5e5"}
+            stroke={nextUnscannedFinger?.id === "left_thumb" ? "#f59e0b" : "#999"}
+            strokeWidth="2"
+          />
+          {scannedFingers.includes("left_thumb") && (
+            <text x="130" y="147" textAnchor="middle" className="text-sm font-bold fill-white">✓</text>
+          )}
+          <text x="130" y="165" textAnchor="middle" className="text-xs fill-gray-600">L Thumb</text>
+        </g>
+
+        {/* Index Left */}
+        <g>
+          <circle cx="145" cy="90" r="12" 
+            fill={scannedFingers.includes("left_index") ? "#4ade80" : nextUnscannedFinger?.id === "left_index" ? "#fbbf24" : "#e5e5e5"}
+            stroke={nextUnscannedFinger?.id === "left_index" ? "#f59e0b" : "#999"}
+            strokeWidth="2"
+          />
+          {scannedFingers.includes("left_index") && (
+            <text x="145" y="97" textAnchor="middle" className="text-xs font-bold fill-white">✓</text>
+          )}
+        </g>
+
+        {/* Middle Left */}
+        <g>
+          <circle cx="130" cy="50" r="12" 
+            fill={scannedFingers.includes("left_middle") ? "#4ade80" : nextUnscannedFinger?.id === "left_middle" ? "#fbbf24" : "#e5e5e5"}
+            stroke={nextUnscannedFinger?.id === "left_middle" ? "#f59e0b" : "#999"}
+            strokeWidth="2"
+          />
+          {scannedFingers.includes("left_middle") && (
+            <text x="130" y="56" textAnchor="middle" className="text-xs font-bold fill-white">✓</text>
+          )}
+        </g>
+
+        {/* Ring Left */}
+        <g>
+          <circle cx="110" cy="40" r="12" 
+            fill={scannedFingers.includes("left_ring") ? "#4ade80" : nextUnscannedFinger?.id === "left_ring" ? "#fbbf24" : "#e5e5e5"}
+            stroke={nextUnscannedFinger?.id === "left_ring" ? "#f59e0b" : "#999"}
+            strokeWidth="2"
+          />
+          {scannedFingers.includes("left_ring") && (
+            <text x="110" y="46" textAnchor="middle" className="text-xs font-bold fill-white">✓</text>
+          )}
+        </g>
+
+        {/* Pinky Left */}
+        <g>
+          <circle cx="90" cy="50" r="12" 
+            fill={scannedFingers.includes("left_pinky") ? "#4ade80" : nextUnscannedFinger?.id === "left_pinky" ? "#fbbf24" : "#e5e5e5"}
+            stroke={nextUnscannedFinger?.id === "left_pinky" ? "#f59e0b" : "#999"}
+            strokeWidth="2"
+          />
+          {scannedFingers.includes("left_pinky") && (
+            <text x="90" y="56" textAnchor="middle" className="text-xs font-bold fill-white">✓</text>
+          )}
+        </g>
+      </svg>
+    );
+  };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <h2 className="text-lg font-bold text-foreground">Fingerprint Scan</h2>
       <p className="text-sm text-muted-foreground">
-        Tap each finger to scan. Your device will prompt you to use the fingerprint sensor.
+        Place your finger on the scanner below. The highlighted finger shows which one to scan next.
       </p>
-      {renderHand(rightFingers, "🤚 Right Hand")}
-      {renderHand(leftFingers, "✋ Left Hand")}
-      <p className="text-xs text-muted-foreground">
-        {scannedFingers.length}/10 fingers scanned
+
+      {/* Hand Diagram */}
+      <div className="rounded-lg border border-border bg-card p-6">
+        <h3 className="text-sm font-semibold text-foreground mb-4 text-center">Finger Guide</h3>
+        {renderHandDiagram()}
+        {nextUnscannedFinger && (
+          <p className="text-center mt-4 text-sm font-semibold text-amber-600">
+            Next: {nextUnscannedFinger.label}
+          </p>
+        )}
+      </div>
+
+      {/* Scanner */}
+      <div className="flex justify-center">
+        <button
+          onClick={handleScannerClick}
+          disabled={isScanning || !nextUnscannedFinger}
+          className={`relative w-40 h-40 rounded-full border-4 flex items-center justify-center transition-all ${
+            isScanning
+              ? "border-accent bg-accent/20 animate-pulse"
+              : nextUnscannedFinger
+              ? "border-primary bg-primary/10 hover:bg-primary/20 cursor-pointer"
+              : "border-gray-300 bg-gray-100 cursor-not-allowed opacity-50"
+          }`}
+        >
+          {showTick ? (
+            <div className="text-center">
+              <Check className="h-16 w-16 text-green-500 mx-auto" />
+              <p className="text-xs text-green-600 mt-2">Scanned!</p>
+            </div>
+          ) : (
+            <div className="text-center">
+              <Fingerprint className={`h-16 w-16 mx-auto ${isScanning ? "text-accent animate-pulse" : "text-primary"}`} />
+              <p className="text-xs text-muted-foreground mt-2">
+                {nextUnscannedFinger ? "Place Finger" : "Complete"}
+              </p>
+            </div>
+          )}
+        </button>
+      </div>
+
+      {/* Progress */}
+      <p className="text-center text-sm font-medium text-foreground">
+        <span className="text-primary">{scannedFingers.length}</span>/10 fingers scanned
       </p>
+
+      {scannedFingers.length === 10 && (
+        <div className="rounded-lg bg-green-50 border border-green-200 p-4">
+          <p className="text-sm font-semibold text-green-700 text-center">
+            ✓ All fingerprints captured successfully!
+          </p>
+        </div>
+      )}
     </div>
   );
 };
