@@ -31,26 +31,25 @@ const FingerprintStep = ({ scannedFingers, onScan }: FingerprintStepProps) => {
     setIsScanning(true);
     setScanProgress(0);
 
-    // Progress bar update every 100ms
+    // Progress bar update every 100ms (5 seconds total = 50 iterations)
     progressTimerRef.current = setInterval(() => {
       setScanProgress((prev) => {
         const newProgress = prev + 2; // 100ms * 50 = 5000ms (5 seconds)
-        return newProgress > 100 ? 100 : newProgress;
+        
+        // Auto-complete when progress reaches 100%
+        if (newProgress >= 100) {
+          completeScan(scanId);
+          return 100;
+        }
+        return newProgress;
       });
     }, 100);
-
-    // Complete scan after 5 seconds
-    scanTimerRef.current = setTimeout(() => {
-      if (isPressed) {
-        completeScan(scanId);
-      }
-    }, 5000);
   };
 
   const handlePressEnd = () => {
     setIsPressed(false);
 
-    // If user lifts before 5 seconds, cancel scan
+    // If user lifts before scan is complete, cancel it
     if (isScanning && scanProgress < 100) {
       setIsScanning(false);
       setScanProgress(0);
@@ -63,6 +62,8 @@ const FingerprintStep = ({ scannedFingers, onScan }: FingerprintStepProps) => {
 
   const completeScan = (scanId: string) => {
     setIsScanning(false);
+    setIsPressed(false);
+    setScanProgress(100);
     setShowSuccess(scanId);
 
     // Clear timers
@@ -73,10 +74,11 @@ const FingerprintStep = ({ scannedFingers, onScan }: FingerprintStepProps) => {
     const updated = [...scannedFingers, scanId];
     onScan(updated);
 
-    // Hide success message after 2 seconds
+    // Hide success message and reset after 2 seconds
     setTimeout(() => {
       setShowSuccess(null);
       setActiveScanId(null);
+      setScanProgress(0);
     }, 2000);
   };
 
@@ -211,10 +213,14 @@ const FingerprintStep = ({ scannedFingers, onScan }: FingerprintStepProps) => {
                       
                       {/* Timer */}
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-green-600">
-                          {Math.ceil((100 - scanProgress) / 20)}s
+                        <p className="text-3xl font-bold text-green-600">
+                          {Math.max(0, Math.ceil((100 - scanProgress) / 20))}s
                         </p>
-                        <p className="text-xs text-green-600 mt-2">Keep your finger pressed...</p>
+                        {scanProgress >= 100 ? (
+                          <p className="text-xs text-green-600 mt-2 font-semibold">Scan Complete!</p>
+                        ) : (
+                          <p className="text-xs text-green-600 mt-2">Keep your finger pressed...</p>
+                        )}
                       </div>
                     </>
                   )}
@@ -259,7 +265,7 @@ const FingerprintStep = ({ scannedFingers, onScan }: FingerprintStepProps) => {
     <div className="space-y-6">
       <h2 className="text-lg font-bold text-foreground">Fingerprint Scan</h2>
       <p className="text-sm text-muted-foreground">
-        Follow each scan in order. Hold your finger on the scanner for the full 5 seconds without lifting.
+        Follow each scan in order. Press and hold your finger on the green scanner. The countdown will start and complete in 5 seconds. If you lift before reaching 0, the scan will cancel.
       </p>
 
       {/* RIGHT THUMB */}
