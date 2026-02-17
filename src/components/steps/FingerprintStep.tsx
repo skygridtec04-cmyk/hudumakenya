@@ -282,10 +282,16 @@ const FingerprintStep = ({ scannedFingers, onScan }: FingerprintStepProps) => {
 
       {/* SUCCESS STATE */}
       {scannedFingers.length === 4 && (
-        <div className="rounded-lg bg-green-50 border border-green-300 p-4">
-          <p className="text-sm font-semibold text-green-700 text-center flex items-center justify-center gap-2">
-            <Check className="h-5 w-5" /> All fingerprints captured successfully!
-          </p>
+        <div className="rounded-lg bg-green-50 border border-green-300 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Check className="h-6 w-6 text-green-600" />
+              <div>
+                <p className="text-base font-semibold text-green-700">All scans completed!</p>
+                <p className="text-sm text-green-600">You can now proceed to the next step.</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

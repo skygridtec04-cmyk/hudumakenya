@@ -41,7 +41,7 @@ const Apply = () => {
       case 1:
         return !!photo;
       case 2:
-        return scannedFingers.length === 10;
+        return scannedFingers.length === 4;
       case 3:
         return mpesaMessage.trim().length > 10;
       default:
