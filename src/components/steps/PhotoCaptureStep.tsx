@@ -1,6 +1,6 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, RotateCcw } from "lucide-react";
+import { Upload, RotateCcw, Image } from "lucide-react";
 
 interface PhotoCaptureStepProps {
   photo: string | null;
@@ -8,65 +8,64 @@ interface PhotoCaptureStepProps {
 }
 
 const PhotoCaptureStep = ({ photo, onCapture }: PhotoCaptureStepProps) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [streaming, setStreaming] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
 
-  const startCamera = useCallback(async () => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     setError("");
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: 480, height: 640 },
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-        setStreaming(true);
-      }
-    } catch {
-      setError("Camera access denied. Please allow camera permissions.");
-    }
-  }, []);
+    const file = event.target.files?.[0];
+    
+    if (!file) return;
 
-  const capturePhoto = useCallback(() => {
-    if (!videoRef.current) return;
-    const canvas = document.createElement("canvas");
-    canvas.width = 480;
-    canvas.height = 640;
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      ctx.drawImage(videoRef.current, 0, 0, 480, 640);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-      onCapture(dataUrl);
-      // Stop stream
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream?.getTracks().forEach((t) => t.stop());
-      setStreaming(false);
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setError("Please select a valid image file.");
+      return;
     }
-  }, [onCapture]);
 
-  const retake = () => {
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image size must be less than 5MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      onCapture(result);
+    };
+    reader.onerror = () => {
+      setError("Failed to read the image file.");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const triggerFileInput = () => {
+    inputRef.current?.click();
+  };
+
+  const removePhoto = () => {
     onCapture("");
-    startCamera();
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
   };
 
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-bold text-foreground">Passport Photo</h2>
       <p className="text-sm text-muted-foreground">
-        Take a clear passport-style photo. Ensure good lighting, face the camera directly, and keep a neutral expression.
+        Upload a clear passport-style photo. Ensure good lighting, face the camera directly, and keep a neutral expression.
       </p>
 
       <div className="flex justify-center">
         <div className="relative h-72 w-56 overflow-hidden rounded-lg border-2 border-dashed border-border bg-muted">
           {photo ? (
-            <img src={photo} alt="Captured" className="h-full w-full object-cover" />
-          ) : streaming ? (
-            <video ref={videoRef} className="h-full w-full object-cover" autoPlay playsInline muted />
+            <img src={photo} alt="Uploaded" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
-              <Camera className="h-12 w-12" />
-              <span className="text-sm">No photo taken</span>
+              <Image className="h-12 w-12" />
+              <span className="text-sm">No photo uploaded</span>
             </div>
           )}
         </div>
@@ -74,18 +73,22 @@ const PhotoCaptureStep = ({ photo, onCapture }: PhotoCaptureStepProps) => {
 
       {error && <p className="text-center text-sm text-destructive">{error}</p>}
 
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+
       <div className="flex justify-center gap-3">
         {photo ? (
-          <Button variant="outline" onClick={retake}>
-            <RotateCcw className="mr-2 h-4 w-4" /> Retake Photo
-          </Button>
-        ) : streaming ? (
-          <Button onClick={capturePhoto}>
-            <Camera className="mr-2 h-4 w-4" /> Capture Photo
+          <Button variant="outline" onClick={removePhoto}>
+            <RotateCcw className="mr-2 h-4 w-4" /> Remove Photo
           </Button>
         ) : (
-          <Button onClick={startCamera}>
-            <Camera className="mr-2 h-4 w-4" /> Open Camera
+          <Button onClick={triggerFileInput}>
+            <Upload className="mr-2 h-4 w-4" /> Upload Photo
           </Button>
         )}
       </div>
